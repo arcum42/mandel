@@ -18,8 +18,13 @@
 #include <complex>
 #include <vector>
 
-const double m_min = -2.0;
-const double m_max = 2.0;
+struct point
+{
+    double x,y;
+};
+
+point m_min = { -2.0, -2.0 };
+point m_max = { 2.0, 2.0 };
 
 const u_int32_t m_max_iter = 100;
 
@@ -56,29 +61,16 @@ void draw_pixel(std::vector<u_int8_t> &pixels, u_int32_t width, u_int32_t x, u_i
     pixels[offset + 3] = a;
 }
 
-int main(int argc, char *argv[])
+void draw_mandel(SDL_Renderer *renderer, SDL_Texture *texture)
 {
-    SDL_Window *window = nullptr;
-    SDL_Renderer *renderer = nullptr;
-    SDL_Texture *texture = nullptr;
-
     std::vector<u_int8_t> pixels(m_width * m_height * 4, 0);
-
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
-
-    int err = SDL_CreateWindowAndRenderer(m_width, m_height, 0, &window, &renderer);
-
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
-
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
 
     for (int screen_x = 0; screen_x < m_width; screen_x++)
     {
         for (int screen_y = 0; screen_y < m_height; screen_y++)
         {
-            double real_x = map(screen_x, 0, m_width, m_min, m_max);
-            double real_y = map(screen_y, 0, m_height, m_min, m_max);
+            double real_x = map(screen_x, 0, m_width, m_min.x, m_max.x);
+            double real_y = map(screen_y, 0, m_height, m_min.y, m_max.y);
 
             uint32_t i = mandel(real_x, real_y);
 
@@ -95,13 +87,95 @@ int main(int argc, char *argv[])
         SDL_RenderCopy(renderer, texture, nullptr, nullptr);
         SDL_RenderPresent(renderer);
     }
+}
+
+int main(int argc, char *argv[])
+{
+    SDL_Window *window = nullptr;
+    SDL_Renderer *renderer = nullptr;
+    SDL_Texture *texture = nullptr;
+
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+
+    int err = SDL_CreateWindowAndRenderer(m_width, m_height, 0, &window, &renderer);
+
+    SDL_RenderClear(renderer);
+    SDL_RenderPresent(renderer);
+
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
+    draw_mandel(renderer, texture);
 
     SDL_Event event;
+    bool closing_time = false;
+    bool redraw = false;
 
-    while (!(SDL_PollEvent(&event) && (event.type == SDL_QUIT)))
+    while (!closing_time)
     {
-        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-        SDL_RenderPresent(renderer);
+        redraw = true;
+        SDL_PollEvent(&event);
+
+        switch (event.type)
+        {
+                case SDL_KEYDOWN:
+                    switch( event.key.keysym.sym)
+                    {
+                        case SDLK_PLUS:
+                        case SDLK_EQUALS:
+                            m_min.x *= 0.9;
+                            m_min.y *= 0.9;
+                            m_max.x *= 0.9;
+                            m_max.y *= 0.9;
+                            break;
+
+                        case SDLK_MINUS:
+                            m_min.x /= 0.9;
+                            m_min.y /= 0.9;
+                            m_max.x /= 0.9;
+                            m_max.y /= 0.9;
+                            break;
+
+                        case SDLK_LEFT:
+                            m_min.x /= 0.9;
+                            m_max.x *= 0.9;
+                            break;
+
+                        case SDLK_RIGHT:
+                            m_min.x *= 0.9;
+                            m_max.x /= 0.9;
+                            break;
+
+                        case SDLK_UP:
+                            m_min.y /= 0.9;
+                            m_max.y *= 0.9;
+                            break;
+
+                        case SDLK_DOWN:
+                            m_min.y *= 0.9;
+                            m_max.y /= 0.9;
+                            break;
+
+                        default:
+                            redraw = false;
+                            break;
+                    }
+                    break;
+
+            case SDL_QUIT:
+                closing_time = true;
+                break;
+
+            default:
+                redraw = false;
+                break;
+        }
+
+        if (!closing_time)
+        {
+            if (redraw) draw_mandel(renderer, texture);
+
+            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+            SDL_RenderPresent(renderer);
+        }
     }
 
     SDL_DestroyRenderer(renderer);
