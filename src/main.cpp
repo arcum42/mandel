@@ -20,11 +20,11 @@
 
 struct point
 {
-    double x,y;
+    double x, y;
 };
 
-point m_min = { -2.0, -2.0 };
-point m_max = { 2.0, 2.0 };
+point m_min = {-2.0, -2.0};
+point m_max = {2.0, 2.0};
 
 const u_int32_t m_max_iter = 100;
 
@@ -111,70 +111,77 @@ int main(int argc, char *argv[])
 
     while (!closing_time)
     {
-        redraw = true;
-        SDL_PollEvent(&event);
-
-        switch (event.type)
+        if (!closing_time)
         {
-                case SDL_KEYDOWN:
-                    switch( event.key.keysym.sym)
+            if (redraw)
+            {
+                draw_mandel(renderer, texture);
+                redraw = false;
+            }
+
+            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+            SDL_RenderPresent(renderer);
+        }
+
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_KEYDOWN:
+                //case SDL_KEYUP:
+                if (!event.key.repeat)
+                {
+                    redraw = true;
+                    switch (event.key.keysym.sym)
                     {
-                        case SDLK_PLUS:
-                        case SDLK_EQUALS:
-                            m_min.x *= 0.9;
-                            m_min.y *= 0.9;
-                            m_max.x *= 0.9;
-                            m_max.y *= 0.9;
-                            break;
+                    case SDLK_PLUS:
+                    case SDLK_EQUALS:
+                        m_min.x *= 0.9;
+                        m_min.y *= 0.9;
+                        m_max.x *= 0.9;
+                        m_max.y *= 0.9;
+                        break;
 
-                        case SDLK_MINUS:
-                            m_min.x /= 0.9;
-                            m_min.y /= 0.9;
-                            m_max.x /= 0.9;
-                            m_max.y /= 0.9;
-                            break;
+                    case SDLK_MINUS:
+                        m_min.x /= 0.9;
+                        m_min.y /= 0.9;
+                        m_max.x /= 0.9;
+                        m_max.y /= 0.9;
+                        break;
 
-                        case SDLK_LEFT:
-                            m_min.x /= 0.9;
-                            m_max.x *= 0.9;
-                            break;
+                    case SDLK_LEFT:
+                        m_min.x /= 0.9;
+                        m_max.x *= 0.9;
+                        break;
 
-                        case SDLK_RIGHT:
-                            m_min.x *= 0.9;
-                            m_max.x /= 0.9;
-                            break;
+                    case SDLK_RIGHT:
+                        m_min.x *= 0.9;
+                        m_max.x /= 0.9;
+                        break;
 
-                        case SDLK_UP:
-                            m_min.y /= 0.9;
-                            m_max.y *= 0.9;
-                            break;
+                    case SDLK_UP:
+                        m_min.y /= 0.9;
+                        m_max.y *= 0.9;
+                        break;
 
-                        case SDLK_DOWN:
-                            m_min.y *= 0.9;
-                            m_max.y /= 0.9;
-                            break;
+                    case SDLK_DOWN:
+                        m_min.y *= 0.9;
+                        m_max.y /= 0.9;
+                        break;
 
-                        default:
-                            redraw = false;
-                            break;
+                    default:
+                        break;
                     }
-                    break;
+                }
+                break;
 
             case SDL_QUIT:
                 closing_time = true;
                 break;
 
             default:
-                redraw = false;
                 break;
-        }
-
-        if (!closing_time)
-        {
-            if (redraw) draw_mandel(renderer, texture);
-
-            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-            SDL_RenderPresent(renderer);
+            }
         }
     }
 
