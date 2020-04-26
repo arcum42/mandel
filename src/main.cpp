@@ -26,10 +26,15 @@ struct point
 point m_min = {-2.0, -2.0};
 point m_max = {2.0, 2.0};
 
+const int initial_width = 640;
+const int initial_height = 480;
+
+int m_width = initial_width;
+int m_height = initial_height;
+
 const u_int32_t m_max_iter = 100;
 
-const int m_width = 640;
-const int m_height = 480;
+std::vector<u_int8_t> pixels(m_width * m_height * 4, 0);
 
 double map(double x, double in_min, double in_max, double out_min, double out_max)
 {
@@ -51,9 +56,9 @@ u_int32_t mandel(double x, double y)
     return i;
 }
 
-void draw_pixel(std::vector<u_int8_t> &pixels, u_int32_t width, u_int32_t x, u_int32_t y, u_int8_t r, u_int8_t g, u_int8_t b, u_int8_t a)
+void draw_pixel_alpha( u_int32_t x, u_int32_t y, u_int8_t r, u_int8_t g, u_int8_t b, u_int8_t a)
 {
-    const unsigned int offset = (width * 4 * y) + x * 4;
+    const unsigned int offset = (m_width * 4 * y) + x * 4;
 
     pixels[offset + 0] = r;
     pixels[offset + 1] = g;
@@ -61,10 +66,14 @@ void draw_pixel(std::vector<u_int8_t> &pixels, u_int32_t width, u_int32_t x, u_i
     pixels[offset + 3] = a;
 }
 
-void draw_mandel(SDL_Renderer *renderer, SDL_Texture *texture)
+void draw_pixel( u_int32_t x, u_int32_t y, u_int8_t r, u_int8_t g, u_int8_t b)
 {
-    std::vector<u_int8_t> pixels(m_width * m_height * 4, 0);
+    draw_pixel_alpha(x,y,r,g,b, SDL_ALPHA_OPAQUE);
+}
 
+void draw_mandel(SDL_Texture *texture)
+{
+    pixels.clear();
     for (int screen_x = 0; screen_x < m_width; screen_x++)
     {
         for (int screen_y = 0; screen_y < m_height; screen_y++)
@@ -80,13 +89,16 @@ void draw_mandel(SDL_Renderer *renderer, SDL_Texture *texture)
                 int grad_g = map(i, 0, m_max_iter, 0, 128);
                 int grad_b = map(i, 0, m_max_iter, 0, 255);
 
-                draw_pixel(pixels, m_width, screen_x, screen_y, grad_r, grad_g, grad_b, SDL_ALPHA_OPAQUE);
+                draw_pixel(screen_x, screen_y, grad_r, grad_g, grad_b);
             }
+            else
+            {
+                    draw_pixel(screen_x, screen_y, 0, 0, 0);
+            }
+            
         }
-        SDL_UpdateTexture(texture, nullptr, &pixels[0], m_width * 4);
-        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-        SDL_RenderPresent(renderer);
     }
+        SDL_UpdateTexture(texture, nullptr, &pixels[0], m_width * 4);
 }
 
 int main(int argc, char *argv[])
@@ -98,16 +110,14 @@ int main(int argc, char *argv[])
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
     int err = SDL_CreateWindowAndRenderer(m_width, m_height, 0, &window, &renderer);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
 
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
-    draw_mandel(renderer, texture);
-
     SDL_Event event;
     bool closing_time = false;
-    bool redraw = false;
+    bool redraw = true;
 
     while (!closing_time)
     {
@@ -115,10 +125,10 @@ int main(int argc, char *argv[])
         {
             if (redraw)
             {
-                draw_mandel(renderer, texture);
+                draw_mandel(texture);
                 redraw = false;
             }
-
+            
             SDL_RenderCopy(renderer, texture, nullptr, nullptr);
             SDL_RenderPresent(renderer);
         }
