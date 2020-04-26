@@ -116,7 +116,8 @@ int main(int argc, char *argv[])
 
     int err = SDL_CreateWindowAndRenderer(m_width, m_height, SDL_RENDERER_ACCELERATED | SDL_WINDOW_RESIZABLE, &window, &renderer);
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
-
+    SDL_SetWindowTitle(window, "Mandelbrot");
+    
     SDL_RenderClear(renderer);
     SDL_RenderPresent(renderer);
 
@@ -181,24 +182,24 @@ int main(int argc, char *argv[])
             case SDL_WINDOWEVENT:
                 switch (event.window.event)
                 {
-                    case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        m_width = event.window.data1;
-                        m_height = event.window.data2;
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    m_width = event.window.data1;
+                    m_height = event.window.data2;
 
-            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-            SDL_RenderPresent(renderer);
-            
-                        SDL_DestroyTexture(texture);
-                        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
-                        pixels.resize(m_width * m_height * 4);
-                        break;
+                    SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+                    SDL_RenderPresent(renderer);
 
-                    case SDL_WINDOWEVENT_EXPOSED:
-                        redraw = true;
-                        break;
+                    SDL_DestroyTexture(texture);
+                    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
+                    pixels.resize(m_width * m_height * 4);
+                    break;
 
-                    default:
-                        break;
+                case SDL_WINDOWEVENT_EXPOSED:
+                    redraw = true;
+                    break;
+
+                default:
+                    break;
                 }
                 break;
 
