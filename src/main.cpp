@@ -41,6 +41,12 @@ double map(double x, double in_min, double in_max, double out_min, double out_ma
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+// Small optimization. Assume in_min is zero.
+double map_zero(double x, double in_max, double out_min, double out_max)
+{
+    return x * (out_max - out_min) / in_max + out_min;
+}
+
 u_int32_t mandel(double x, double y)
 {
     std::complex<double> c{x, y};
@@ -78,16 +84,16 @@ void draw_mandel(SDL_Texture *texture)
     {
         for (int screen_y = 0; screen_y < m_height; screen_y++)
         {
-            double real_x = map(screen_x, 0, m_width, m_min.x, m_max.x);
-            double real_y = map(screen_y, 0, m_height, m_min.y, m_max.y);
+            double real_x = map_zero(screen_x, m_width, m_min.x, m_max.x);
+            double real_y = map_zero(screen_y, m_height, m_min.y, m_max.y);
 
             uint32_t i = mandel(real_x, real_y);
 
             if (i < m_max_iter)
             {
-                int grad_r = map(i, 0, m_max_iter, 0, 255);
-                int grad_g = map(i, 0, m_max_iter, 0, 128);
-                int grad_b = map(i, 0, m_max_iter, 0, 255);
+                int grad_r = map_zero(i, m_max_iter, 0, 255);
+                int grad_g = map_zero(i, m_max_iter, 0, 128);
+                int grad_b = map_zero(i, m_max_iter, 0, 255);
 
                 draw_pixel(screen_x, screen_y, grad_r, grad_g, grad_b);
             }
@@ -108,7 +114,7 @@ int main(int argc, char *argv[])
 
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
-    int err = SDL_CreateWindowAndRenderer(m_width, m_height, SDL_WINDOW_RESIZABLE, &window, &renderer);
+    int err = SDL_CreateWindowAndRenderer(m_width, m_height, SDL_RENDERER_ACCELERATED | SDL_WINDOW_RESIZABLE, &window, &renderer);
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
 
     SDL_RenderClear(renderer);
@@ -173,16 +179,26 @@ int main(int argc, char *argv[])
                 break;
 
             case SDL_WINDOWEVENT:
-                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+                switch (event.window.event)
                 {
-                    m_width = event.window.data1;
-                    m_height = event.window.data2;
+                    case SDL_WINDOWEVENT_SIZE_CHANGED:
+                        m_width = event.window.data1;
+                        m_height = event.window.data2;
 
-                    SDL_DestroyTexture(texture);
-                    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
-                    pixels.resize(m_width * m_height * 4);
+            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+            SDL_RenderPresent(renderer);
+            
+                        SDL_DestroyTexture(texture);
+                        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
+                        pixels.resize(m_width * m_height * 4);
+                        break;
 
-                    redraw = true;
+                    case SDL_WINDOWEVENT_EXPOSED:
+                        redraw = true;
+                        break;
+
+                    default:
+                        break;
                 }
                 break;
 
