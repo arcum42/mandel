@@ -34,7 +34,7 @@ int m_height = initial_height;
 
 const u_int32_t m_max_iter = 100;
 
-std::vector<u_int8_t> pixels(m_width * m_height * 4, 0);
+std::vector<u_int8_t> pixels(m_width *m_height * 4, 0);
 
 double map(double x, double in_min, double in_max, double out_min, double out_max)
 {
@@ -56,7 +56,7 @@ u_int32_t mandel(double x, double y)
     return i;
 }
 
-void draw_pixel_alpha( u_int32_t x, u_int32_t y, u_int8_t r, u_int8_t g, u_int8_t b, u_int8_t a)
+void draw_pixel_alpha(u_int32_t x, u_int32_t y, u_int8_t r, u_int8_t g, u_int8_t b, u_int8_t a)
 {
     const unsigned int offset = (m_width * 4 * y) + x * 4;
 
@@ -66,9 +66,9 @@ void draw_pixel_alpha( u_int32_t x, u_int32_t y, u_int8_t r, u_int8_t g, u_int8_
     pixels[offset + 3] = a;
 }
 
-void draw_pixel( u_int32_t x, u_int32_t y, u_int8_t r, u_int8_t g, u_int8_t b)
+void draw_pixel(u_int32_t x, u_int32_t y, u_int8_t r, u_int8_t g, u_int8_t b)
 {
-    draw_pixel_alpha(x,y,r,g,b, SDL_ALPHA_OPAQUE);
+    draw_pixel_alpha(x, y, r, g, b, SDL_ALPHA_OPAQUE);
 }
 
 void draw_mandel(SDL_Texture *texture)
@@ -93,12 +93,11 @@ void draw_mandel(SDL_Texture *texture)
             }
             else
             {
-                    draw_pixel(screen_x, screen_y, 0, 0, 0);
+                draw_pixel(screen_x, screen_y, 0, 0, 0);
             }
-            
         }
     }
-        SDL_UpdateTexture(texture, nullptr, &pixels[0], m_width * 4);
+    SDL_UpdateTexture(texture, nullptr, &pixels[0], m_width * 4);
 }
 
 int main(int argc, char *argv[])
@@ -109,7 +108,7 @@ int main(int argc, char *argv[])
 
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
-    int err = SDL_CreateWindowAndRenderer(m_width, m_height, 0, &window, &renderer);
+    int err = SDL_CreateWindowAndRenderer(m_width, m_height, SDL_WINDOW_RESIZABLE, &window, &renderer);
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
 
     SDL_RenderClear(renderer);
@@ -121,18 +120,6 @@ int main(int argc, char *argv[])
 
     while (!closing_time)
     {
-        if (!closing_time)
-        {
-            if (redraw)
-            {
-                draw_mandel(texture);
-                redraw = false;
-            }
-            
-            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-            SDL_RenderPresent(renderer);
-        }
-
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
@@ -185,6 +172,20 @@ int main(int argc, char *argv[])
                 }
                 break;
 
+            case SDL_WINDOWEVENT:
+                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+                {
+                    m_width = event.window.data1;
+                    m_height = event.window.data2;
+
+                    SDL_DestroyTexture(texture);
+                    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, m_width, m_height);
+                    pixels.resize(m_width * m_height * 4);
+
+                    redraw = true;
+                }
+                break;
+
             case SDL_QUIT:
                 closing_time = true;
                 break;
@@ -192,6 +193,18 @@ int main(int argc, char *argv[])
             default:
                 break;
             }
+        }
+
+        if (!closing_time)
+        {
+            if (redraw)
+            {
+                draw_mandel(texture);
+                redraw = false;
+            }
+
+            SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+            SDL_RenderPresent(renderer);
         }
     }
 
